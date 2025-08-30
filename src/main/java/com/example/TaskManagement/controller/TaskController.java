@@ -1,11 +1,14 @@
 package com.example.TaskManagement.controller;
 
+import com.example.TaskManagement.model.Task;
 import com.example.TaskManagement.model.TaskStatus;
 import com.example.TaskManagement.service.TaskService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/tasks")
@@ -18,44 +21,41 @@ public class TaskController {
     }
 
     @GetMapping
-    public ResponseEntity<String> getAllTasks() {
-        taskService.getTaskDetails();
-        return ResponseEntity.ok("All tasks");
+    public ResponseEntity<List<Task>> getTasks(
+            @RequestParam(name = "status", required = false) TaskStatus status,
+            @RequestParam(name = "dueDate", required = false) LocalDate dueDate) {
+        if(status != null) {
+            List<Task> task = taskService.getTaskDetails(status);
+            return ResponseEntity.ok(task);
+        } else if(dueDate != null) {
+            List<Task> task = taskService.getTaskDetails(dueDate);
+            return ResponseEntity.ok(task);
+        } else {
+            List<Task> task = taskService.getTaskDetails();
+            return ResponseEntity.ok(task);
+        }
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<String> getTaskById(@PathVariable("id") Long id) {
-        taskService.getTaskDetails(id);
-        return ResponseEntity.ok("Task with Id : " + id);
+    public ResponseEntity<Task> getTaskById(@PathVariable("id") Long id) {
+        return taskService.getTaskDetails(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public ResponseEntity<String> createTask(@RequestBody String request) {
-        taskService.addTask();
-        return ResponseEntity.ok("Task Created for request : " + request);
+    public ResponseEntity<Task> createTask(@RequestBody Task request) {
+        return ResponseEntity.ok(taskService.addTask(request));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<String> updateTask(@PathVariable("id") Long id, @RequestBody String request) {
-        taskService.updateTaskDetails(id);
-        return ResponseEntity.ok("Task Updated for ID : " + id);
+    public ResponseEntity<String> updateTask(@PathVariable("id") Long id, @RequestBody Task request) {
+        return taskService.updateTaskDetails(id, request);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteTask(@PathVariable("id") Long id) {
         taskService.deleteTaskById(id);
-        return ResponseEntity.ok("Task Deleted for ID : " + id);
-    }
-
-    @GetMapping
-    public ResponseEntity<String> getTaskByStatus(@RequestParam("status") TaskStatus status) {
-        taskService.getTaskDetails(status);
-        return ResponseEntity.ok("");
-    }
-
-    @GetMapping
-    public ResponseEntity<String> getTaskByDueDate(@RequestParam("dueDate") LocalDate dueDate) {
-        taskService.getTaskDetails(dueDate);
-        return ResponseEntity.ok("");
+        return ResponseEntity.ok("Task Deleted successfully for ID : " + id);
     }
 }
